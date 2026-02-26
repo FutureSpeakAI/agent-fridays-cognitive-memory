@@ -1,0 +1,39 @@
+{
+  "name": "cognitive-memory",
+  "version": "1.0.0",
+  "description": "Three-tier AI agent memory system with sleep-like consolidation, episodic recording, and relationship tracking.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "memory",
+    "cognitive",
+    "episodic",
+    "consolidation",
+    "relationship",
+    "trust",
+    "llm",
+    "agi"
+  ],
+  "author": "FutureSpeak.AI (https://futurespeak.ai)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FutureSpeakAI/cognitive-memory.git"
+  },
+  "homepage": "https://github.com/FutureSpeakAI/cognitive-memory",
+  "engines": {
+    "node": ">=18"
+  }
+}
