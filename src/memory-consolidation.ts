@@ -12,7 +12,7 @@
  * memories and discards noise.
  *
  * Extracted from Agent Friday (https://github.com/FutureSpeakAI/Agent-Friday)
- * — the AGI OS by FutureSpeak.AI
+ * — the world's most trustworthy AI assistant, by FutureSpeak.AI
  */
 
 import crypto from 'crypto';

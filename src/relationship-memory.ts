@@ -9,7 +9,7 @@
  * Trust formula: 0.3 + log10(sessions + 1) * 0.2 + min(streak * 0.02, 0.2)
  *
  * Extracted from Agent Friday (https://github.com/FutureSpeakAI/Agent-Friday)
- * — the AGI OS by FutureSpeak.AI
+ * — the world's most trustworthy AI assistant, by FutureSpeak.AI
  */
 
 import fs from 'fs/promises';

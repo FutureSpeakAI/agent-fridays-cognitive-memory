@@ -2,7 +2,7 @@
 
 **Three-tier AI agent memory system with sleep-like consolidation, episodic recording, and relationship tracking.**
 
-> Extracted from [Agent Friday](https://github.com/FutureSpeakAI/Agent-Friday) — the AGI OS by [FutureSpeak.AI](https://futurespeak.ai)
+> Extracted from [Agent Friday](https://github.com/FutureSpeakAI/Agent-Friday) — the world's most trustworthy AI assistant, by [FutureSpeak.AI](https://futurespeak.ai)
 
 ---
 
@@ -236,6 +236,70 @@ const relationship = new RelationshipMemory();
 relationship.initializeFromData(existingState);
 ```
 
+## Reverse RLHF Countermeasures
+
+RLHF-trained language models develop a well-documented failure mode: they learn to tell users what they want to hear rather than what is true. Over time, this creates echo chambers — the model reinforces the user's existing beliefs, preferences, and biases, producing a feedback loop that degrades the quality of every subsequent interaction. We call this **Reverse RLHF**: the very optimization that makes models helpful also makes them sycophantic, and without architectural intervention, every memory system built on top of an RLHF-trained model will amplify this distortion.
+
+`cognitive-memory` is engineered from first principles to break this loop. Every subsystem — deduplication, promotion scoring, episodic recording, relationship modeling — contains specific mechanisms that prevent runaway reinforcement, preserve ground truth, and force observations to earn their way into long-term storage through cross-session validation.
+
+### Anti-Reinforcement Architecture
+
+**Jaccard Deduplication (threshold ≥ 0.80).** When a new fact is proposed, the engine computes word-set overlap with stop-word filtering against all existing entries. If Jaccard similarity meets or exceeds 0.80, the fact is rejected as a duplicate. This prevents the most common echo-chamber vector: the same preference or belief being stored in slightly different phrasings, creating artificial weight through repetition. The word-set approach avoids the classic substring trap where "he" matches "she likes cheese."
+
+**Medium-Term Confidence Capping.** When an existing medium-term observation is reinforced, its confidence increases by a fixed `+0.1` increment, hard-capped at `1.0` via `Math.min(1, confidence + 0.1)`. This prevents any single observation from accumulating unbounded confidence regardless of how many times the user repeats it. Ten reinforcements and a hundred reinforcements produce the same ceiling.
+
+**Extraction Prompt Anti-Echo Design.** The LLM extraction prompt is explicitly provided with the user's existing known facts and instructed to extract only NEW information not already captured. This prevents the extraction layer from re-discovering and re-storing facts the system already knows — a critical defense against the model's natural tendency to surface information it believes the user wants reinforced.
+
+### Promotion Scoring with Staleness Penalties
+
+Facts do not graduate from medium-term to long-term storage based on frequency alone. A composite weighted score enforces multi-dimensional validation:
+
+| Signal | Weight | Mechanism |
+|--------|--------|-----------|
+| Frequency | `min(occurrences, 10) × 2` | Capped at 10 — bursts cannot overwhelm |
+| Cross-Session | `min(sessions, 5) × 2` | Must appear across distinct sessions (30-min gap) |
+| Time-Span | `+5` if ≥ 7 days, `+3` if ≥ 3 days | Must persist over real time |
+| Confidence | `+3` if ≥ 0.9 | Bonus for high-confidence observations |
+| Staleness | `-5` if > 14 days stale, `-2` if > 7 days | Unreinforced observations decay |
+
+Promotion requires **score ≥ 10 AND occurrences ≥ 3**. The dual-gate filter means a single session burst (high frequency, zero cross-session score) cannot force promotion, and infrequently observed patterns (high time-span, low frequency) also cannot pass. This forces observations through a gauntlet that approximates how human memory consolidates: repeated exposure, across contexts, over time, with decay for things that stop being relevant.
+
+Medium-term entries also carry a hard TTL: entries older than 30 days with fewer than 5 occurrences are pruned automatically. Memory that isn't reinforced across sessions dies.
+
+### Immutable Episodic Records
+
+The `EpisodicMemoryStore` is append-only by design. There is no `updateEpisode` method. Once a session is recorded — with its transcript, AI-generated summary, topics, emotional tone, and key decisions — it becomes an immutable historical record. This means the agent cannot retroactively revise what happened in past conversations to align with the user's current preferences. The historical record is the ground truth, and it cannot be overwritten.
+
+Episodic search uses weighted scoring that resists keyword-stuffing: summary matches score 10 points, topic matches 5 per topic, key decisions 4 per decision, but transcript matches score only 1 point with an early-break — preventing a transcript full of repeated terms from dominating results. Recency bonuses (+3 within 24 hours, +1 within 1 week) ensure recent context surfaces without suppressing older records.
+
+### Source Attribution and Trust Provenance
+
+Every long-term memory entry carries a `source` field: `'extracted'` (AI-derived from conversation), `'user-stated'` (explicitly told by the user), or `'manual-edit'` (modified through the memory explorer UI). Each entry also carries a `confirmed` boolean. This provenance chain means the agent can distinguish between what it inferred and what the user explicitly stated — and downstream consumers can weight these differently. An extracted inference and a user-stated fact are not the same epistemic category, and the system preserves that distinction.
+
+### Logarithmic Trust Growth
+
+The relationship tracking module models trust as a logarithmic function:
+
+```
+trust = 0.3 + log₁₀(sessions + 1) × 0.2 + min(streak × 0.02, 0.2)
+```
+
+Trust grows rapidly in early interactions (sessions 1–10 contribute the most) and saturates as the relationship matures — exactly how trust works in human relationships. The streak bonus is capped at `0.2` (10 consecutive days), preventing artificial trust inflation through marathon usage. This ensures the agent cannot develop disproportionate trust from a single extended session.
+
+Communication preferences are tracked with per-trait confidence scores that start at `0.5` and increment by `+0.1` per reinforcement, capped at `1.0`. Preferences only surface in the agent's context when confidence exceeds `0.6` — requiring a minimum of two independent observations before the agent adapts its behavior. This prevents single-interaction flukes from shaping communication style.
+
+### Consolidation as Cognitive Integrity
+
+The `MemoryConsolidation` module runs periodic sleep-like cycles that actively resist echo-chamber formation:
+
+1. **Merge deduplication** — Long-term entries with ≥ 0.85 Jaccard similarity are merged via LLM, collapsing redundant beliefs into single canonical entries
+2. **Cross-episode insight extraction** — Requires a minimum of 3 episodes and produces a maximum of 3 insights per cycle, with deduplication against existing facts. This prevents the consolidation process itself from becoming a reinforcement vector
+3. **Staleness-aware promotion** — Observations that haven't been reinforced in 14+ days receive a -5 penalty, making promotion progressively harder for stale beliefs
+
+The net effect: the memory system acts as a cognitive immune system. It accepts new information, validates it across sessions and time, merges duplicates, decays unreinforced beliefs, and preserves immutable historical records — systematically preventing the echo-chamber dynamics that RLHF-trained models would otherwise amplify.
+
+---
+
 ## API Reference
 
 ### MemoryManager
@@ -291,7 +355,7 @@ relationship.initializeFromData(existingState);
 
 ## Origin
 
-This memory system was built as part of [Agent Friday](https://github.com/FutureSpeakAI/Agent-Friday), the world's first AGI OS, by [FutureSpeak.AI](https://futurespeak.ai) in Austin, Texas.
+This memory system was built as part of [Agent Friday](https://github.com/FutureSpeakAI/Agent-Friday), the world's most trustworthy AI assistant, by [FutureSpeak.AI](https://futurespeak.ai) in Austin, Texas.
 
 The core insight — that AI agents need human-like cognitive architecture, not just flat fact storage — emerged from building a personal AI assistant that needed to remember context across sessions, notice patterns over time, consolidate what it learned during "downtime", and build a genuine relationship with its user.
 

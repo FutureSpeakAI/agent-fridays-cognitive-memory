@@ -2,7 +2,7 @@
  * cognitive-memory — AI agent memory system with three-tier architecture,
  * sleep-like consolidation, episodic recording, and relationship tracking.
  *
- * Built by FutureSpeak.AI — extracted from Agent Friday, the AGI OS.
+ * Built by FutureSpeak.AI — extracted from Agent Friday, the world's most trustworthy AI assistant.
  * https://github.com/FutureSpeakAI/Agent-Friday
  */
 
